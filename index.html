@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8" />
+    <title>My Deliverable Map (Mapbox)</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js"></script>
+    <style>
+      /* Full screen map */
+      html, body { height: 100%; }
+      body { margin: 0; padding: 0; }
+      #map { position: absolute; inset: 0; }
+
+      /* Right-side overlay panel */
+      #panel {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 380px;
+        max-height: calc(100vh - 24px);
+        overflow-y: auto;
+        background: rgba(255, 255, 255, 0.97);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+        border-radius: 10px;
+        padding: 16px;
+        box-sizing: border-box;
+      }
+      #panel h2 { margin: 0 0 8px 0; }
+      #panel button { margin-bottom: 10px; }
+
+      table { border-collapse: collapse; border-spacing: 0; width: 100%; border: 1px solid #ddd; }
+      th, td { text-align: left; padding: 12px; font-size: 14px; }
+      tr:nth-child(even) { background-color: #f2f2f2; }
+
+      /* Hide panel under 1024px width */
+      @media (max-width: 1024px) {
+        #panel { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <aside id="panel">
+      <h2>My Feature List</h2>
+      <button id="sortBtn">Sort by Magnitude</button>
+      <table>
+        <tr>
+          <th>id</th>
+          <th>magnitude</th>
+          <th>timestamp</th>
+        </tr>
+      </table>
+      <p style="font-size:12px;opacity:.8;">Tip: replace <code>my_points.geojson</code> and <code>my_regions.geojson</code> in <code>assets/</code> with your own files and update properties as needed.</p>
+      <p style="font-size:12px;opacity:.8;">
+        <a href="earthquake.html">See the earthquake example</a>
+      </p>
+    </aside>
+
+    <script>
+      // Mapbox token
+      mapboxgl.accessToken = 'pk.eyJ1IjoidGh1eW5nMjI0IiwiYSI6ImNtaGY5Z2N5YTAyejUya3EzOTg0bWJoeHUifQ.ALKhLXVy6672boOi-LSIpg';
+
+      // Use a DIFFERENT style than the satellite used on earthquake.html
+      const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/light-v11', // different from satellite-v9
+        center: [138, 38],
+        zoom: 5.5
+      });
+
+      async function loadDataAndUI() {
+        // Replace with your own files for the deliverable
+        const pointsUrl = 'assets/my_points.geojson';
+        const regionsUrl = 'assets/my_regions.geojson';
+
+        const [pointsRes, regionsRes] = await Promise.all([
+          fetch(pointsUrl),
+          fetch(regionsUrl)
+        ]);
+        const points = await pointsRes.json();
+        const regions = await regionsRes.json();
+
+        map.on('load', () => {
+          // Regions (polygons)
+          map.addSource('regions', { type: 'geojson', data: regions });
+          map.addLayer({
+            id: 'regions-fill',
+            type: 'fill',
+            source: 'regions',
+            paint: {
+              'fill-color': '#4da3ff',
+              'fill-opacity': 0.35
+            }
+          });
+          map.addLayer({
+            id: 'regions-outline',
+            type: 'line',
+            source: 'regions',
+            paint: {
+              'line-color': '#1d5fbf',
+              'line-width': 1
+            }
+          });
+
+          // Points
+          map.addSource('points', { type: 'geojson', data: points });
+          map.addLayer({
+            id: 'points-circle',
+            type: 'circle',
+            source: 'points',
+            paint: {
+              'circle-radius': [
+                'case',
+                ['has', 'mag'],
+                [
+                  'interpolate', ['linear'], ['to-number', ['get', 'mag'], 0],
+                  0, 4,
+                  5, 8,
+                  7, 14
+                ],
+                6
+              ],
+              'circle-color': '#ff3b3b',
+              'circle-stroke-color': '#ffffff',
+              'circle-stroke-width': 2,
+              'circle-opacity': 0.9
+            }
+          });
+
+          // Click popup
+          map.on('click', 'points-circle', (e) => {
+            const f = e.features[0];
+            const id = f.properties.id ?? '(no id)';
+            const mag = f.properties.mag ?? '(n/a)';
+            const timeVal = f.properties.time ? new Date(f.properties.time).toLocaleString('en-US') : '(n/a)';
+            new mapboxgl.Popup()
+              .setLngLat(e.lngLat)
+              .setHTML(`<strong>${id}</strong><br>Magnitude: ${mag}<br>Time: ${timeVal}`)
+              .addTo(map);
+          });
+        });
+
+        // Build the table from points
+        const table = document.getElementsByTagName('table')[0];
+        let row, cell1, cell2, cell3;
+        for (let i = 0; i < points.features.length; i++) {
+          const p = points.features[i].properties || {};
+          row = table.insertRow(-1);
+          cell1 = row.insertCell(0);
+          cell2 = row.insertCell(1);
+          cell3 = row.insertCell(2);
+          cell1.innerHTML = p.id ?? `(row ${i + 1})`;
+          cell2.innerHTML = p.mag ?? '';
+          cell3.innerHTML = p.time ? new Date(p.time).toLocaleDateString('en-US') : '';
+        }
+
+        // Sort by magnitude (desc)
+        const btn = document.getElementById('sortBtn');
+        btn.addEventListener('click', () => { sortTable(table); });
+
+        function sortTable(tbl) {
+          let switching = true;
+          while (switching) {
+            switching = false;
+            const rows = tbl.rows;
+            for (let i = 1; i < rows.length - 1; i++) {
+              let shouldSwitch = false;
+              const x = parseFloat(rows[i].getElementsByTagName('td')[1].innerHTML) || -Infinity;
+              const y = parseFloat(rows[i + 1].getElementsByTagName('td')[1].innerHTML) || -Infinity;
+              if (x < y) { shouldSwitch = true; break; }
+            }
+            if (shouldSwitch) {
+              rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+              switching = true;
+            }
+          }
+        }
+      }
+
+      loadDataAndUI();
+    </script>
+  </body>
+</html>
