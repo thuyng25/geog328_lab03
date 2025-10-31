@@ -1,0 +1,43 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+      { "type": "Feature",
+        "properties": { "id": "Ximending Tea Lab", "rating": 4.7, "time": 1730434800000 },
+        "geometry": { "type": "Point", "coordinates": [121.5072, 25.0432] }
+      },
+      { "type": "Feature",
+        "properties": { "id": "Dalongdong Matcha House", "rating": 4.4, "time": 1730521200000 },
+        "geometry": { "type": "Point", "coordinates": [121.5152, 25.0719] }
+      },
+      { "type": "Feature",
+        "properties": { "id": "Da’an Whisk & Whisk", "rating": 4.9, "time": 1730607600000 },
+        "geometry": { "type": "Point", "coordinates": [121.5435, 25.0330] }
+      },
+      { "type": "Feature",
+        "properties": { "id": "101 Sado Bar", "rating": 4.8, "time": 1730694000000 },
+        "geometry": { "type": "Point", "coordinates": [121.5646, 25.0339] }
+      },
+      { "type": "Feature",
+        "properties": { "id": "Shin Kong Matcha Stand", "rating": 4.3, "time": 1730780400000 },
+        "geometry": { "type": "Point", "coordinates": [121.5660, 25.0332] }
+      },
+      { "type": "Feature",
+        "properties": { "id": "Xinyi Ceremonial Cup", "rating": 4.6, "time": 1730866800000 },
+        "geometry": { "type": "Point", "coordinates": [121.5622, 25.0360] }
+      },
+  
+      { "type": "Feature",
+        "properties": { "id": "Zhongshan Folio Matcha", "rating": 4.2, "time": 1730953200000 },
+        "geometry": { "type": "Point", "coordinates": [121.5270, 25.0561] }
+      },
+      { "type": "Feature",
+        "properties": { "id": "Nanjing East Road Kissa", "rating": 3.9, "time": 1731039600000 },
+        "geometry": { "type": "Point", "coordinates": [121.5450, 25.0520] }
+      },
+      { "type": "Feature",
+        "properties": { "id": "Huashan 1914 Cha Atelier", "rating": 4.5, "time": 1731126000000 },
+        "geometry": { "type": "Point", "coordinates": [121.5290, 25.0443] }
+      }
+    ]
+  }
+  

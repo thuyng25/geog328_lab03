@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8" />
+    <title>Matcha Cafe Map</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js"></script>
+    <style>
+      /* Full screen map */
+      html, body { height: 100%; margin: 0; padding: 0; }
+      #map { position: absolute; inset: 0; }
+
+      /* Right-side overlay panel that hovers on top of the map */
+      #panel {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 380px;
+        max-height: calc(100vh - 24px);
+        overflow-y: auto;
+        background: rgba(255, 255, 255, 0.97);
+        border-radius: 10px;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+        padding: 16px;
+        box-sizing: border-box;
+      }
+
+      #panel h2 { margin: 0 0 10px 0; }
+      #panel button { width: 100%; margin-bottom: 10px; }
+
+      table { border-collapse: collapse; border-spacing: 0; width: 100%; border: 1px solid #ddd; }
+      th, td { text-align: left; padding: 16px; }
+      tr:nth-child(even) { background-color: #f2f2f2; }
+
+      /* Requirement: hide panel under 1024px */
+      @media (max-width: 1024px) {
+        #panel { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <!-- Right side panel that hovers over the map -->
+    <aside id="panel">
+      <h2>Matcha Cafe List</h2>
+      <button id="sortBtn">Sort by Rating</button>
+      <table>
+        <tr>
+          <th>id</th>
+          <th>rating</th>
+          <th>opened</th>
+        </tr>
+      </table>
+      <p style="font-size:12px;opacity:.8;margin-top:10px;">
+        <a href="matcha_cafe.html">See the template page</a>
+      </p>
+    </aside>
+
+    <script>
+      // Your Mapbox token
+      mapboxgl.accessToken = 'pk.eyJ1IjoidGh1eW5nMjI0IiwiYSI6ImNtaGY5Z2N5YTAyejUya3EzOTg0bWJoeHUifQ.ALKhLXVy6672boOi-LSIpg';
+
+      // Use a style different from earthquake.html (which uses satellite)
+      const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/outdoors-v12',
+        center: [121.535, 25.045], // Taipei
+        zoom: 12
+      });
+
+      async function loadData() {
+        // Requirement: at least two GeoJSON datasets on index.html
+        const [cafesRes, taipeiRes] = await Promise.all([
+          fetch('data/matcha_cafes.json'),
+          fetch('data/taipei.json')
+        ]);
+        const cafes = await cafesRes.json();
+        const taipei = await taipeiRes.json();
+
+        map.on('load', () => {
+          // Taipei polygon
+          map.addSource('taipei', { type: 'geojson', data: taipei });
+          map.addLayer({
+            id: 'taipei-fill',
+            type: 'fill',
+            source: 'taipei',
+            paint: { 'fill-color': '#99d0ff', 'fill-opacity': 0.4 }
+          });
+          map.addLayer({
+            id: 'taipei-outline',
+            type: 'line',
+            source: 'taipei',
+            paint: { 'line-color': '#1d5fbf', 'line-width': 1 }
+          });
+
+          // Cafés points
+          map.addSource('cafes', { type: 'geojson', data: cafes });
+          map.addLayer({
+            id: 'cafes-layer',
+            type: 'circle',
+            source: 'cafes',
+            paint: {
+              'circle-radius': ['interpolate', ['linear'], ['to-number', ['get', 'rating'], 0], 3, 6, 5, 12],
+              'circle-color': '#55cc44',
+              'circle-stroke-color': '#ffffff',
+              'circle-stroke-width': 2
+            }
+          });
+
+          // Popup
+          map.on('click', 'cafes-layer', (e) => {
+            const f = e.features[0];
+            const id = f.properties.id ?? '(no id)';
+            const rating = f.properties.rating ?? '(n/a)';
+            const opened = f.properties.time ? new Date(f.properties.time).toLocaleDateString('en-US') : '(n/a)';
+            new mapboxgl.Popup()
+              .setLngLat(e.lngLat)
+              .setHTML(`<strong>${id}</strong><br>Rating: ${rating}<br>Opened: ${opened}`)
+              .addTo(map);
+          });
+          map.on('mouseenter', 'cafes-layer', () => map.getCanvas().style.cursor = 'pointer');
+          map.on('mouseleave', 'cafes-layer', () => map.getCanvas().style.cursor = '');
+        });
+
+        // Build the table
+        const table = document.querySelector('table');
+        cafes.features.forEach((feat, i) => {
+          const p = feat.properties || {};
+          const row = table.insertRow(-1);
+          row.insertCell(0).textContent = p.id ?? `(row ${i+1})`;
+          row.insertCell(1).textContent = p.rating ?? '';
+          row.insertCell(2).textContent = p.time ? new Date(p.time).toLocaleDateString('en-US') : '';
+        });
+
+        // Sort button (desc by rating)
+        document.getElementById('sortBtn').addEventListener('click', () => {
+          let switching = true;
+          while (switching) {
+            switching = false;
+            const rows = table.rows;
+            for (let i = 1; i < rows.length - 1; i++) {
+              const x = parseFloat(rows[i].cells[1].textContent) || -Infinity;
+              const y = parseFloat(rows[i + 1].cells[1].textContent) || -Infinity;
+              if (x < y) {
+                rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                switching = true;
+                break;
+              }
+            }
+          }
+        });
+      }
+
+      loadData();
+    </script>
+  </body>
+</html>
