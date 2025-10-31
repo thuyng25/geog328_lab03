@@ -2,7 +2,7 @@
 <html lang="en-US">
   <head>
     <meta charset="utf-8" />
-    <title>Matcha Cafe Map</title>
+    <title>Matcha Cafe List</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js"></script>
@@ -53,16 +53,13 @@
           <th>opened</th>
         </tr>
       </table>
-      <p style="font-size:12px;opacity:.8;margin-top:10px;">
-        <a href="matcha_cafe.html">See the template page</a>
-      </p>
+
     </aside>
 
     <script>
-      // Your Mapbox token
+      // Mapbox token
       mapboxgl.accessToken = 'pk.eyJ1IjoidGh1eW5nMjI0IiwiYSI6ImNtaGY5Z2N5YTAyejUya3EzOTg0bWJoeHUifQ.ALKhLXVy6672boOi-LSIpg';
 
-      // Use a style different from earthquake.html (which uses satellite)
       const map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/mapbox/outdoors-v12',
@@ -71,7 +68,6 @@
       });
 
       async function loadData() {
-        // Requirement: at least two GeoJSON datasets on index.html
         const [cafesRes, taipeiRes] = await Promise.all([
           fetch('data/matcha_cafes.json'),
           fetch('data/taipei.json')
@@ -133,26 +129,29 @@
           row.insertCell(1).textContent = p.rating ?? '';
           row.insertCell(2).textContent = p.time ? new Date(p.time).toLocaleDateString('en-US') : '';
         });
+        
+        const btn = document.getElementById("sortBtn");
+        let sortDesc = true; // first click sorts high -> low
+        btn.addEventListener('click', () => {
+          sortTableByNumericCol(table, 1, sortDesc);
+          sortDesc = !sortDesc;
+        });
 
         // Sort button (desc by rating)
-        document.getElementById('sortBtn').addEventListener('click', () => {
-          let switching = true;
-          while (switching) {
-            switching = false;
-            const rows = table.rows;
-            for (let i = 1; i < rows.length - 1; i++) {
-              const x = parseFloat(rows[i].cells[1].textContent) || -Infinity;
-              const y = parseFloat(rows[i + 1].cells[1].textContent) || -Infinity;
-              if (x < y) {
-                rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-                switching = true;
-                break;
-              }
-            }
-          }
-        });
+        function sortTableByNumericCol(tbl, colIndex, desc = true) {
+          const tbody = tbl.tBodies[0];               // implicit single tbody
+          const rows = Array.from(tbody.rows).slice(1); // skip header
+          rows.sort((a, b) => {
+            const ax = parseFloat(a.cells[colIndex].textContent);
+            const bx = parseFloat(b.cells[colIndex].textContent);
+            const A = Number.isFinite(ax) ? ax : -Infinity; // blanks -> very small
+            const B = Number.isFinite(bx) ? bx : -Infinity;
+            return desc ? B - A : A - B;
+          });
+          rows.forEach(r => tbody.appendChild(r)); // reattach in order
+        }
       }
-
+      
       loadData();
     </script>
   </body>

@@ -2,7 +2,7 @@
 <html lang="en-US">
   <head>
     <meta charset="utf-8" />
-    <title>Matcha Cafe in Taipei</title>
+    <title>Matcha Cafe</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js"></script>
@@ -23,25 +23,13 @@
         padding: 16px;
         box-sizing: border-box;
       }
-      #panel h2 { margin-top: 0; }
-      button { width: 100%; margin-bottom: 10px; }
-      table { border-collapse: collapse; width: 100%; border: 1px solid #ddd; }
-      th, td { text-align: left; padding: 12px; font-size: 14px; }
-      tr:nth-child(even) { background-color: #f2f2f2; }
-
-      @media (max-width: 1024px) {
-        #panel { display: none; }
-      }
+      
     </style>
   </head>
   <body>
     <div id="map"></div>
     <aside id="panel">
       <h2>Matcha Cafe in Taipei</h2>
-      <button id="sortBtn">Sort by Rating</button>
-      <table>
-        <tr><th>ID</th><th>Rating</th><th>Opened</th></tr>
-      </table>
     </aside>
 
     <script>
@@ -70,44 +58,6 @@
             source: 'regions',
             paint: { 'fill-color': '#4da3ff', 'fill-opacity': 0.35 }
           });
-
-          map.addSource('points', { type: 'geojson', data: points });
-          map.addLayer({
-            id: 'points-circle',
-            type: 'circle',
-            source: 'points',
-            paint: {
-              'circle-radius': ['interpolate', ['linear'], ['get', 'rating'], 3, 6, 5, 12],
-              'circle-color': '#ff3b3b',
-              'circle-stroke-color': '#fff',
-              'circle-stroke-width': 2
-            }
-          });
-        });
-
-        const table = document.querySelector('table');
-        points.features.forEach((f) => {
-          const row = table.insertRow(-1);
-          row.insertCell(0).textContent = f.properties.id;
-          row.insertCell(1).textContent = f.properties.rating;
-          row.insertCell(2).textContent = new Date(f.properties.time).toLocaleDateString('en-US');
-        });
-
-        document.getElementById('sortBtn').addEventListener('click', () => {
-          let switching = true;
-          const rows = table.rows;
-          while (switching) {
-            switching = false;
-            for (let i = 1; i < rows.length - 1; i++) {
-              const x = parseFloat(rows[i].cells[1].textContent);
-              const y = parseFloat(rows[i + 1].cells[1].textContent);
-              if (x < y) {
-                rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-                switching = true;
-                break;
-              }
-            }
-          }
         });
       }
 
